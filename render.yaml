@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: BackendResp
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: TURSO_URL
+        sync: false           # Ingresar manualmente en el dashboard de Render
+      - key: TURSO_TOKEN
+        sync: false           # Ingresar manualmente en el dashboard de Render
+      - key: ROM_API_KEY
+        generateValue: true   # Render genera un valor seguro automáticamente
