@@ -54,7 +54,7 @@ turso([
         fin        TEXT,
         total_ciclos INTEGER DEFAULT 0,
         total_apneas INTEGER DEFAULT 0,
-        created_at TEXT    DEFAULT(strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+        created_at TEXT    DEFAULT(strftime('%Y-%m-%dT%H:%M:%fZ','now','-5 hours'))
     )"],
     ['sql'=>"CREATE TABLE IF NOT EXISTS resp_eventos(
         id        INTEGER PRIMARY KEY,
