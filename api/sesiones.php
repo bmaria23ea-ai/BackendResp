@@ -123,7 +123,7 @@ try {
     elseif ($method === 'POST' && !$sid) {
         $b = json_decode(file_get_contents('php://input'), true);
         if (!$b || !isset($b['id'])) { http_response_code(400); echo json_encode(['error'=>'invalid']); exit; }
-        turso([['sql'=>"INSERT INTO resp_sesiones(id,paciente,notas,inicio,fin,total_ciclos,total_apneas)
+        turso([['sql'=>"INSERT OR IGNORE INTO resp_sesiones(id,paciente,notas,inicio,fin,total_ciclos,total_apneas)
             VALUES(:id,:paciente,:notas,:inicio,:fin,:ciclos,:apneas)",
             'args'=>[
                 ':id'      => $b['id'],
@@ -142,7 +142,7 @@ try {
     elseif ($method === 'POST' && $sid && $action === 'event') {
         $b = json_decode(file_get_contents('php://input'), true);
         if (!$b || !isset($b['tipo'])) { http_response_code(400); echo json_encode(['error'=>'invalid']); exit; }
-        turso([['sql'=>"INSERT INTO resp_eventos(id,sesion_id,timestamp,tipo,valor_s,ie_ratio)
+        turso([['sql'=>"INSERT OR IGNORE INTO resp_eventos(id,sesion_id,timestamp,tipo,valor_s,ie_ratio)
             VALUES(:id,:sid,:ts,:tipo,:valor,:ie)",
             'args'=>[
                 ':id'   => $b['id'],
