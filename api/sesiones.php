@@ -1,7 +1,7 @@
 <?php
-// ── CORS ─────────────────────────────────────────────────────────────────────
+// CORS 
 $allowed_origins = [
-    'https://bmaria23ea-ai.github.io',   // ajusta a tu dominio de GitHub Pages
+    'https://bmaria23ea-ai.github.io',   // dominio de GitHub Pages
     'http://localhost',
     'http://127.0.0.1',
 ];
@@ -10,17 +10,14 @@ header('Access-Control-Allow-Origin: ' . (in_array($origin, $allowed_origins, tr
 header('Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, X-API-Key');
 header('Content-Type: application/json; charset=utf-8');
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
-
-// ── API Key ───────────────────────────────────────────────────────────────────
+// API Key 
 $api_key = getenv('ROM_API_KEY');
 $req_key = $_SERVER['HTTP_X_API_KEY'] ?? '';
 if ($api_key && $req_key !== $api_key) {
     http_response_code(401); echo json_encode(['error'=>'unauthorized']); exit;
 }
-
-// ── Turso ─────────────────────────────────────────────────────────────────────
+// Turso
 define('TURSO_URL',   getenv('TURSO_URL')   ?: '');
 define('TURSO_TOKEN', getenv('TURSO_TOKEN') ?: '');
 
@@ -43,8 +40,7 @@ function turso($stmts) {
     if (!$d) throw new Exception('Turso vacío');
     return $d['results'] ?? [];
 }
-
-// ── Crear tablas si no existen ────────────────────────────────────────────────
+//  Crear tablas si no existen 
 turso([
     ['sql'=>"CREATE TABLE IF NOT EXISTS resp_sesiones(
         id         INTEGER PRIMARY KEY,
@@ -65,15 +61,13 @@ turso([
         ie_ratio  REAL    DEFAULT 0
     )"],
 ]);
-
-// ── Router ────────────────────────────────────────────────────────────────────
+// Router 
 $method = $_SERVER['REQUEST_METHOD'];
 $sid    = isset($_GET['sid']) ? (int)$_GET['sid'] : null;
 $action = $_GET['action'] ?? null;
 
 try {
-
-    // GET /sesiones.php → lista todas las sesiones
+    // GET /sesiones.php = lista todas las sesiones
     if ($method === 'GET' && !$sid && !$action) {
         $res  = turso([['sql'=>"SELECT * FROM resp_sesiones ORDER BY id DESC"]]);
         $rows = $res[0]['response']['result']['rows'] ?? [];
@@ -87,8 +81,7 @@ try {
         }
         echo json_encode($out);
     }
-
-    // GET /sesiones.php?sid=N&action=events → eventos de una sesión
+    // GET /sesiones.php?sid=N&action=events = eventos de una sesión
     elseif ($method === 'GET' && $sid && $action === 'events') {
         $res  = turso([['sql'=>"SELECT * FROM resp_eventos WHERE sesion_id=:sid ORDER BY id ASC",'args'=>[':sid'=>$sid]]]);
         $rows = $res[0]['response']['result']['rows'] ?? [];
@@ -102,24 +95,21 @@ try {
         }
         echo json_encode($out);
     }
-
-    // GET /sesiones.php?action=nextid → siguiente id de sesión
+    // GET /sesiones.php?action=nextid = siguiente id de sesión
     elseif ($method === 'GET' && $action === 'nextid') {
         $res  = turso([['sql'=>"SELECT COALESCE(MAX(id),0) AS m FROM resp_sesiones"]]);
         $rows = $res[0]['response']['result']['rows'] ?? [];
         $max  = (int)($rows[0][0]['value'] ?? 0);
         echo json_encode(['nextId' => $max + 1]);
     }
-
-    // GET /sesiones.php?action=nexteventid → siguiente id de evento
+    // GET /sesiones.php?action=nexteventid = siguiente id de evento
     elseif ($method === 'GET' && $action === 'nexteventid') {
         $res  = turso([['sql'=>"SELECT COALESCE(MAX(id),0) AS m FROM resp_eventos"]]);
         $rows = $res[0]['response']['result']['rows'] ?? [];
         $max  = (int)($rows[0][0]['value'] ?? 0);
         echo json_encode(['nextId' => $max + 1]);
     }
-
-    // POST /sesiones.php → crear sesión
+    // POST /sesiones.php = crear sesión
     elseif ($method === 'POST' && !$sid) {
         $b = json_decode(file_get_contents('php://input'), true);
         if (!$b || !isset($b['id'])) { http_response_code(400); echo json_encode(['error'=>'invalid']); exit; }
@@ -137,8 +127,7 @@ try {
         ]]);
         http_response_code(201); echo json_encode(['ok'=>true,'id'=>$b['id']]);
     }
-
-    // POST /sesiones.php?sid=N&action=event → agregar evento
+    // POST /sesiones.php?sid=N&action=event = agregar evento
     elseif ($method === 'POST' && $sid && $action === 'event') {
         $b = json_decode(file_get_contents('php://input'), true);
         if (!$b || !isset($b['tipo'])) { http_response_code(400); echo json_encode(['error'=>'invalid']); exit; }
@@ -155,8 +144,7 @@ try {
         ]]);
         http_response_code(201); echo json_encode(['ok'=>true]);
     }
-
-    // PATCH /sesiones.php?sid=N → actualizar paciente/notas/fin/contadores
+    // PATCH /sesiones.php?sid=N = actualizar paciente/notas/fin/contadores
     elseif ($method === 'PATCH' && $sid) {
         $b   = json_decode(file_get_contents('php://input'), true);
         $res = turso([['sql'=>"SELECT id FROM resp_sesiones WHERE id=:sid",'args'=>[':sid'=>$sid]]]);
@@ -172,8 +160,7 @@ try {
         if ($sets) turso([['sql'=>"UPDATE resp_sesiones SET ".implode(',',$sets)." WHERE id=:sid",'args'=>$args]]);
         echo json_encode(['ok'=>true]);
     }
-
-    // DELETE /sesiones.php?sid=N → eliminar sesión y sus eventos
+    // DELETE /sesiones.php?sid=N = eliminar sesión y sus eventos
     elseif ($method === 'DELETE' && $sid) {
         turso([
             ['sql'=>"DELETE FROM resp_eventos  WHERE sesion_id=:sid",'args'=>[':sid'=>$sid]],
@@ -181,9 +168,7 @@ try {
         ]);
         echo json_encode(['ok'=>true]);
     }
-
     else { http_response_code(405); echo json_encode(['error'=>'not allowed']); }
-
 } catch(Exception $e) {
     http_response_code(500); echo json_encode(['error'=>$e->getMessage()]);
 }
